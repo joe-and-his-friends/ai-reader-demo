@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
@@ -57,6 +59,9 @@ def get_conversation_chain(vectorstore):
 # 处理用户输入问题
 def handle_user_input(user_question):
     if user_question:
+        if st.session_state.conversation is None:
+            return
+        
         response = st.session_state.conversation({'question': user_question})
         st.session_state.chat_history = response['chat_history']
 
@@ -85,8 +90,8 @@ def into_store(raw_text):
 
 # 项目入口
 def main():
-    load_dotenv()
-    title = "对话 with multiple 文件"
+    # load_dotenv()
+    title = "AI Reader "
     icon = ":books:"
 
     # 设置html模版参数
@@ -102,37 +107,50 @@ def main():
     # 设置标题
     st.header(title + icon)
 
-    # 接收用户输入
-    user_question = st.text_input("Ask a question about your files:")
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if api_key == 'test':
+        api_key = st.text_input(label="Input openapi api key", max_chars=100)
+        if st.button("Save"):
+            with st.spinner("Saving"):
+                if (api_key == ''): return
 
-    # 回答，相当于user_question的on_change处理
-    if user_question:
-        handle_user_input(user_question)
-    
-    # with语句适用于对资源进行访问的场合，它可以确保在对资源的操作过程中不管是否发生异常都会自动执行释放资源的操作，相当于try catch
-    # 在sidebar里
-    with st.sidebar:
-        # 设置侧边栏标题
-        st.subheader("Your documents")
-        # 获取上传文件结果
-        pdf_docs = st.file_uploader("Upload your Files(PDF，Video) here and click on 'Process'", accept_multiple_files=True)
-        youtube_url = st.sidebar.text_area(label="What is the YouTube video URL?", max_chars=100 )
+                os.environ['OPENAI_API_KEY'] = api_key
+                st.experimental_rerun()
+    else:
+        pdf_docs = ""
+        youtube_url = ""
+        # 接收用户输入
+        user_question = st.text_input("Ask a question about your files:")
 
-        # 按钮点击，把传入文件分析入库
-        if st.button("Process"):
-            with st.spinner("Processing"):
-                list_text=""
-                # 如果有PDF
-                if pdf_docs:
-                    # 这里可能反复上传同一个PDF，考虑做个字典
-                    list_text += get_pdf_text(pdf_docs)
-                # 如果有视频链接
-                if youtube_url:
-                    # 这里可能反复输入同一个地址，考虑做个字典
-                    list_text += get_text_from_youtube_video_url(youtube_url)
+        # 回答，相当于user_question的on_change处理
+        if user_question:
+            handle_user_input(user_question)
+        
+        # with语句适用于对资源进行访问的场合，它可以确保在对资源的操作过程中不管是否发生异常都会自动执行释放资源的操作，相当于try catch
+        # 在sidebar里
+        with st.sidebar:
+            # 设置侧边栏标题
+            st.subheader("Your documents")
+            # 获取上传文件结果
+            pdf_docs = st.file_uploader("Upload your Files(PDF，Video) here and click on 'Process'", accept_multiple_files=True)
+            youtube_url = st.sidebar.text_area(label="What is the YouTube video URL?", max_chars=100 )
 
-                # 合并分析
-                into_store(list_text)
+            # 按钮点击，把传入文件分析入库
+            if st.button("Process"):
+                with st.spinner("Processing"):
+                    list_text=""
+                    # 如果有PDF
+                    if pdf_docs:
+                        # 这里可能反复上传同一个PDF，考虑做个字典
+                        list_text += get_pdf_text(pdf_docs)
+                    # 如果有视频链接
+                    if youtube_url:
+                        # 这里可能反复输入同一个地址，考虑做个字典
+                        list_text += get_text_from_youtube_video_url(youtube_url)
+
+                    # 合并分析
+                    into_store(list_text)
+        
             
 if __name__ == '__main__':
     main()
