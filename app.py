@@ -107,50 +107,45 @@ def main():
     # 设置标题
     st.header(title + icon)
 
-    api_key = os.environ.get('OPENAI_API_KEY')
-    if api_key == 'test':
-        api_key = st.text_input(label="Input openapi api key", max_chars=100)
-        if st.button("Save"):
-            with st.spinner("Saving"):
-                if (api_key == ''): return
+    # 接收用户输入
+    user_question = st.text_input("Ask a question about your files:")
 
-                os.environ['OPENAI_API_KEY'] = api_key
-                st.experimental_rerun()
-    else:
-        pdf_docs = ""
-        youtube_url = ""
-        # 接收用户输入
-        user_question = st.text_input("Ask a question about your files:")
+    # 回答，相当于user_question的on_change处理
+    if user_question:
+        handle_user_input(user_question)
+    
+    # with语句适用于对资源进行访问的场合，它可以确保在对资源的操作过程中不管是否发生异常都会自动执行释放资源的操作，相当于try catch
+    # 在sidebar里
+    with st.sidebar:
+        # 设置侧边栏标题
+        st.subheader("Your documents")
+        # 获取上传文件结果
+        pdf_docs = st.file_uploader("Upload your Files(PDF，Video) here and click on 'Process'", accept_multiple_files=True)
+        youtube_url = st.sidebar.text_area(label="What is the YouTube video URL?", max_chars=100 )
+        api_key = st.text_input(label="Input openai api key", max_chars=100)
 
-        # 回答，相当于user_question的on_change处理
-        if user_question:
-            handle_user_input(user_question)
+        # 按钮点击，把传入文件分析入库
+        if st.button("Process"):
+            api_key = api_key.strip()
+            if api_key == "":
+                st.warning("Please input your openai api key")
+                return
+            else:
+                    os.environ['OPENAI_API_KEY'] = api_key
+
+            with st.spinner("Processing"):
+                list_text=""
+                # 如果有PDF
+                if pdf_docs:
+                    # 这里可能反复上传同一个PDF，考虑做个字典
+                    list_text += get_pdf_text(pdf_docs)
+                # 如果有视频链接
+                if youtube_url:
+                    # 这里可能反复输入同一个地址，考虑做个字典
+                    list_text += get_text_from_youtube_video_url(youtube_url)
+
+                # 合并分析
+                into_store(list_text)
         
-        # with语句适用于对资源进行访问的场合，它可以确保在对资源的操作过程中不管是否发生异常都会自动执行释放资源的操作，相当于try catch
-        # 在sidebar里
-        with st.sidebar:
-            # 设置侧边栏标题
-            st.subheader("Your documents")
-            # 获取上传文件结果
-            pdf_docs = st.file_uploader("Upload your Files(PDF，Video) here and click on 'Process'", accept_multiple_files=True)
-            youtube_url = st.sidebar.text_area(label="What is the YouTube video URL?", max_chars=100 )
-
-            # 按钮点击，把传入文件分析入库
-            if st.button("Process"):
-                with st.spinner("Processing"):
-                    list_text=""
-                    # 如果有PDF
-                    if pdf_docs:
-                        # 这里可能反复上传同一个PDF，考虑做个字典
-                        list_text += get_pdf_text(pdf_docs)
-                    # 如果有视频链接
-                    if youtube_url:
-                        # 这里可能反复输入同一个地址，考虑做个字典
-                        list_text += get_text_from_youtube_video_url(youtube_url)
-
-                    # 合并分析
-                    into_store(list_text)
-        
-            
 if __name__ == '__main__':
     main()
