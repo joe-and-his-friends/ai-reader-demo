@@ -13,6 +13,7 @@ from htmlTemplates import css, bot_template, user_template
 from langchain.llms import HuggingFaceHub
 
 from video import get_text_from_youtube_video_url
+from website import get_text_from_website_url
 
 # 使用PDF读取器，按页读取内容
 def get_pdf_text(pdf_docs):
@@ -128,6 +129,7 @@ def main():
         # 获取上传文件结果
         pdf_docs = st.file_uploader("Upload your Files(PDF，Video) here and click on 'Process'", accept_multiple_files=True)
         youtube_url = st.sidebar.text_area(label="What is the YouTube video URL?", max_chars=100 )
+        website_url = st.sidebar.text_area(label="What is the Website URL?", max_chars=100 )
         api_key = st.text_input(label="Input openai api key", max_chars=100)
 
         # 按钮点击，把传入文件分析入库
@@ -143,12 +145,14 @@ def main():
                 list_text=""
                 # 如果有PDF
                 if pdf_docs:
-                    # 这里可能反复上传同一个PDF，考虑做个字典
                     list_text += get_pdf_text(pdf_docs)
                 # 如果有视频链接
                 if youtube_url:
-                    # 这里可能反复输入同一个地址，考虑做个字典
                     list_text += get_text_from_youtube_video_url(youtube_url)
+
+                # 如果有网页链接
+                if website_url:
+                    list_text += get_text_from_website_url(website_url)
 
                 # 合并分析
                 into_store(list_text)

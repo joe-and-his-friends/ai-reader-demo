@@ -1,14 +1,5 @@
 from langchain_community.document_loaders import YoutubeLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.llms import OpenAI
-from langchain.prompts.prompt import PromptTemplate
-from langchain.chains import LLMChain
-from dotenv import load_dotenv
-
-
-load_dotenv()
 
 def get_text_from_youtube_video_url(video_url: str) -> str:
     loader = YoutubeLoader.from_youtube_url(video_url, add_video_info=False)
