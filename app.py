@@ -37,6 +37,10 @@ def get_text_chunks(text):
 
 # 文字矢量入库
 def get_vectorstore(text_chunks):
+    if len(text_chunks) == 0:
+        st.warning("Can't find anything for video or pdf")
+        return None
+    
     embeddings = OpenAIEmbeddings()
     # embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl")
     vectorstore = FAISS.from_texts(texts=text_chunks, embedding=embeddings)
@@ -84,6 +88,8 @@ def into_store(raw_text):
     
     # create vector store
     vectorstore = get_vectorstore(text_chunks)
+    if (vectorstore is None):
+        return
 
     # create conversation chain
     st.session_state.conversation = get_conversation_chain(vectorstore)
@@ -131,7 +137,7 @@ def main():
                 st.warning("Please input your openai api key")
                 return
             else:
-                    os.environ['OPENAI_API_KEY'] = api_key
+                os.environ['OPENAI_API_KEY'] = api_key
 
             with st.spinner("Processing"):
                 list_text=""
