@@ -97,7 +97,6 @@ def into_store(raw_text):
 
 # 项目入口
 def main():
-    # load_dotenv()
     title = "AI Reader "
     icon = ":books:"
 
@@ -146,8 +145,10 @@ def main():
             if api_key == "":
                 st.warning("Please input your openai api key")
                 return
-            else:
+            elif api_key != "byron_demo":
                 os.environ['OPENAI_API_KEY'] = api_key
+            else:
+                load_dotenv()
 
             with st.spinner("Processing"):
                 list_text=""
