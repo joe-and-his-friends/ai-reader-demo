@@ -83,7 +83,7 @@ def get_conversation_chain(vectorstore):
     # Get the prompt to use - you can modify this!
     prompt = hub.pull("hwchase17/openai-functions-agent")
     # prompt.messages
-    prompt.messages[0].prompt.template = "You are a helpful assistant. When unsure, reply with \"Sorry, please contact our customer service, Tom.\""
+    # prompt.messages[0].prompt.template = "You are a helpful assistant. When unsure, reply with \"Sorry, please contact our customer service, Tom.\""
 
     agent = create_openai_functions_agent(llm, tools, prompt)
 
@@ -184,15 +184,18 @@ def main():
         # 获取上传文件结果
         pdf_docs = st.file_uploader("Upload your Files(PDF，Video) here and click on 'Process'", accept_multiple_files=True)
         youtube_url = st.sidebar.text_area(label="What is the YouTube video URL?", max_chars=100 )
-        # commonCheckd = st.radio(label="Common", value=True)
-        # newsChecked = st.radio("News")
-        
-        # website_url = ""
-        # if (commonCheckd):
-        website_url = st.sidebar.text_area(label="What is the Website URL?", max_chars=5000 )
-        
-        # if (newsChecked):
-            # website_url = st.sidebar.text_area(label="What is the Website URL?", max_chars=100, value="https://www.bbc.com/news/world-asia-60536689" )
+
+        option = st.sidebar.radio(
+            "Choose the model",
+            ("Common", "News"),
+            index=0
+        )
+
+        website_url = ''
+        if option == "Common":
+            website_url = st.sidebar.text_area(label="What is the Website URL?", max_chars=5000 )
+        else:
+            website_url = st.sidebar.text_area(label="What is the Website URL?", value="https://www.cnn.com,https://www.nytimes.com,https://www.bbc.com/news,https://www.theguardian.com,https://www.foxnews.com,https://www.nbcnews.com,https://www.dailymail.co.uk,https://www.washingtonpost.com,https://www.wsj.com,https://www.usatoday.com,https://www.espn.com,https://www.sports.yahoo.com,https://www.bleacherreport.com,https://www.cbssports.com,https://www.sportingnews.com,https://www.nbcsports.com,https://www.foxsports.com", max_chars=5000 )
 
         api_key = st.text_input(label="Input openai api key", max_chars=100)
 
