@@ -210,7 +210,6 @@ def main():
                 os.environ['OPENAI_API_KEY'] = api_key
             else:
                 load_dotenv()
-                os.environ['OPENAI_API_KEY'] = os.environ.get('INNER_OPENAI_API_KEY')
 
             with st.spinner("Processing"):
                 list_text = ""
