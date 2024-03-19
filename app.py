@@ -83,7 +83,7 @@ def get_conversation_chain(vectorstore):
     # Get the prompt to use - you can modify this!
     prompt = hub.pull("hwchase17/openai-functions-agent")
     # prompt.messages
-    prompt.messages[0].prompt.template = "When unsure, reply with \"Sorry, please contact our customer service, Tom.\""
+    prompt.messages[0].prompt.template = "You are a helpful assistant. When unsure, reply with \"Sorry, please contact our customer service, Tom.\""
 
     agent = create_openai_functions_agent(llm, tools, prompt)
 
