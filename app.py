@@ -11,9 +11,18 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from htmlTemplates import css, bot_template, user_template
 from langchain.llms import HuggingFaceHub
+from langchain.tools.retriever import create_retriever_tool
+from langchain.agents import create_openai_functions_agent
+from langchain import hub
+from langchain.agents import AgentExecutor
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from video import get_text_from_youtube_video_url
 from website import get_text_from_website_url
+
+message_history = ChatMessageHistory()
 
 # 使用PDF读取器，按页读取内容
 def get_pdf_text(pdf_docs):
@@ -49,17 +58,49 @@ def get_vectorstore(text_chunks):
 
 # 交谈历史链
 def get_conversation_chain(vectorstore):
-    llm = ChatOpenAI()
+    # llm = ChatOpenAI()
+    # # llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature":0.5, "max_length":512})
+
+    # memory = ConversationBufferMemory(
+    #     memory_key='chat_history', return_messages=True)
+    # conversation_chain = ConversationalRetrievalChain.from_llm(
+    #     llm=llm,
+    #     retriever=vectorstore.as_retriever(),
+    #     memory=memory
+    # )
+    # return conversation_chain
+    llm = ChatOpenAI(model="gpt-3.5-turbo")
     # llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature":0.5, "max_length":512})
 
-    memory = ConversationBufferMemory(
-        memory_key='chat_history', return_messages=True)
-    conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vectorstore.as_retriever(),
-        memory=memory
+    retriever_tool = create_retriever_tool(
+        vectorstore.as_retriever(),
+        "my_search",
+        "My custom search tool",
     )
-    return conversation_chain
+
+    tools = [retriever_tool]
+
+    # Get the prompt to use - you can modify this!
+    prompt = hub.pull("hwchase17/openai-functions-agent")
+    # prompt.messages
+    prompt.messages[0].prompt.template = "When unsure, reply with \"Sorry, please contact our customer service, Tom.\""
+
+    agent = create_openai_functions_agent(llm, tools, prompt)
+
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+    # message_history = ChatMessageHistory()
+
+    agent_with_chat_history = RunnableWithMessageHistory(
+        agent_executor,
+        # This is needed because in most real world scenarios, a session id is needed
+        # It isn't really used here because we are using a simple in memory ChatMessageHistory
+        lambda session_id: message_history,
+        input_messages_key="input",
+        history_messages_key="chat_history",
+    )
+
+    return agent_with_chat_history
 
 # 处理用户输入问题
 def handle_user_input(user_question):
@@ -67,16 +108,23 @@ def handle_user_input(user_question):
         if st.session_state.conversation is None:
             return
         
-        response = st.session_state.conversation({'question': user_question})
-        st.session_state.chat_history = response['chat_history']
+        response = st.session_state.conversation.invoke(
+            {"input": user_question},
+            config={"configurable": {"session_id": "<foo>"}},
+        )
+        print(response)
 
-        for i, message in enumerate(st.session_state.chat_history):
+        for i, message in enumerate(response['chat_history']):
+            print(message)
             if i % 2 == 0:
                 st.write(user_template.replace(
                     "{{MSG}}", message.content), unsafe_allow_html=True)
             else:
                 st.write(bot_template.replace(
                     "{{MSG}}", message.content), unsafe_allow_html=True)
+        
+        st.write(bot_template.replace(
+                    "{{MSG}}", response['output']), unsafe_allow_html=True)
     else:
         print('user_question is null')
 
@@ -136,8 +184,18 @@ def main():
         # 获取上传文件结果
         pdf_docs = st.file_uploader("Upload your Files(PDF，Video) here and click on 'Process'", accept_multiple_files=True)
         youtube_url = st.sidebar.text_area(label="What is the YouTube video URL?", max_chars=100 )
+        # commonCheckd = st.radio(label="Common", value=True)
+        # newsChecked = st.radio("News")
+        
+        # website_url = ""
+        # if (commonCheckd):
         website_url = st.sidebar.text_area(label="What is the Website URL?", max_chars=100 )
+        
+        # if (newsChecked):
+            # website_url = st.sidebar.text_area(label="What is the Website URL?", max_chars=100, value="https://www.bbc.com/news/world-asia-60536689" )
+
         api_key = st.text_input(label="Input openai api key", max_chars=100)
+
 
         # 按钮点击，把传入文件分析入库
         if st.button("Process"):
@@ -152,7 +210,7 @@ def main():
                 os.environ['OPENAI_API_KEY'] = os.environ.get('INNER_OPENAI_API_KEY')
 
             with st.spinner("Processing"):
-                list_text=""
+                list_text = ""
                 # 如果有PDF
                 if pdf_docs:
                     list_text += get_pdf_text(pdf_docs)
