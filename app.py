@@ -189,7 +189,7 @@ def main():
         
         # website_url = ""
         # if (commonCheckd):
-        website_url = st.sidebar.text_area(label="What is the Website URL?", max_chars=100 )
+        website_url = st.sidebar.text_area(label="What is the Website URL?", max_chars=5000 )
         
         # if (newsChecked):
             # website_url = st.sidebar.text_area(label="What is the Website URL?", max_chars=100, value="https://www.bbc.com/news/world-asia-60536689" )
