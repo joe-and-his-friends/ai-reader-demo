@@ -1,0 +1,37 @@
+services:
+  streamlit_reader:
+    build:
+      dockerfile: ./Dockerfile
+      context: ./
+    environment:
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_ENABLECORS=false
+      - STREAMLIT_SERVER_ENABLEXSRFPROTECTION=false      
+    #network_mode: host
+    #expose: 
+    #  - 8501
+    ports:
+     - '8501:8501'
+  streamlit_face:
+    image: byronng/ai-face-analysis
+    #build:
+    #  context: .
+    #  dockerfile: Dockerfile
+    environment:
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_ENABLECORS=false
+      - STREAMLIT_SERVER_ENABLEXSRFPROTECTION=false
+    ports:
+      - "8502:8501"
+  nginx:
+    image: nginx:latest
+    depends_on:
+      - streamlit_reader
+      - streamlit_face
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt  # Mount certificates from host to container
+

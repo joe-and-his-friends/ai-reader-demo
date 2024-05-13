@@ -40,3 +40,15 @@ To use the MultiPDF Chat App, follow these steps:
 ## License
 -------
 The MultiPDF Chat App is released under the [MIT License](https://opensource.org/licenses/MIT).
+
+
+## Buildx
+1. Create a new Buildx builder which allows building for multiple platforms:
+docker buildx create --name mybuilder --use
+
+2. Inspect if your builder supports the required platforms: 
+docker buildx inspect --bootstrap
+
+3. Build and push the image using Buildx. Specify multiple platforms using the --platform flag:
+docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -t username/face_analysis:tag --push .
+
